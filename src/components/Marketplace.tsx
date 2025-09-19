@@ -97,13 +97,21 @@ const Marketplace = ({ userRole, onBack }: MarketplaceProps) => {
   const [likedProducts, setLikedProducts] = useState<string[]>([]);
   const [location] = useState("Mumbai, Maharashtra");
 
-  const handleSwipe = (direction: 'left' | 'right', productId: string) => {
-    if (direction === 'right') {
+  const handleSwipe = (direction: 'up' | 'down', productId: string) => {
+    if (direction === 'up') {
       setLikedProducts(prev => [...prev, productId]);
     }
     
+    // Create infinite loop by cycling through products
     setTimeout(() => {
-      setCurrentIndex(prev => prev + 1);
+      setProducts(prev => {
+        const newProducts = [...prev];
+        const swiped = newProducts.shift(); // Remove first product
+        if (swiped) {
+          newProducts.push(swiped); // Add it to the end
+        }
+        return newProducts;
+      });
     }, 300);
   };
 
@@ -115,8 +123,7 @@ const Marketplace = ({ userRole, onBack }: MarketplaceProps) => {
     setSelectedProduct(null);
   };
 
-  const visibleProducts = products.slice(currentIndex, currentIndex + 3);
-  const hasMoreProducts = currentIndex < products.length;
+  const visibleProducts = products.slice(0, 3); // Always show first 3 cards for stacking
 
   if (selectedProduct) {
     return <ProductDetail product={selectedProduct} onBack={handleBackToCards} />;
@@ -150,64 +157,39 @@ const Marketplace = ({ userRole, onBack }: MarketplaceProps) => {
             <MapPin className="h-4 w-4" />
             <span>{location}</span>
           </div>
-          <h1 className="font-display text-3xl text-foreground mb-2">
-            {userRole === 'buyer' ? 'Good Morning,' : 'Your Gallery,'}
+          <h1 className="font-display text-4xl text-foreground mb-2 font-bold">
+            Pick your future.
           </h1>
-          <h2 className="font-display text-2xl text-golden">
-            {userRole === 'buyer' ? 'Art Explorer...' : 'Master Artisan...'}
+          <h2 className="font-display text-lg text-golden">
+            {userRole === 'buyer' ? 'Discover treasures from master artisans' : 'Showcase your masterpieces'}
           </h2>
         </div>
       </div>
 
       {/* Card Stack */}
       <div className="px-6 pb-8">
-        {hasMoreProducts ? (
-          <div className="relative h-[600px] max-w-sm mx-auto">
-            {visibleProducts.map((product, index) => (
-              <SwipeableCard
-                key={product.id}
-                product={product}
-                onSwipe={handleSwipe}
-                onCardClick={handleCardClick}
-                isTop={index === 0}
-              />
-            ))}
-          </div>
-        ) : (
-          <Card className="art-card p-8 text-center max-w-sm mx-auto">
-            <div className="space-y-4">
-              <Clock className="h-12 w-12 text-primary mx-auto" />
-              <h3 className="font-display text-2xl text-card-foreground">
-                You've explored all treasures!
-              </h3>
-              <p className="text-muted-foreground">
-                Check back soon for new artisan creations
-              </p>
-              {likedProducts.length > 0 && (
-                <div className="mt-6">
-                  <p className="text-muted-foreground mb-2">
-                    You liked {likedProducts.length} treasures
-                  </p>
-                  <Button className="btn-golden">
-                    View Liked Items
-                  </Button>
-                </div>
-              )}
-            </div>
-          </Card>
-        )}
-      </div>
+        <div className="relative h-[600px] max-w-sm mx-auto">
+          {visibleProducts.map((product, index) => (
+            <SwipeableCard
+              key={`${product.id}-${Date.now()}`} // Unique key for infinite loop
+              product={product}
+              onSwipe={handleSwipe}
+              onCardClick={handleCardClick}
+              stackIndex={index}
+              totalCards={visibleProducts.length}
+            />
+          ))}
+        </div>
 
-      {/* Tips */}
-      {currentIndex === 0 && (
-        <div className="px-6 pb-8">
+        {/* Instructions */}
+        <div className="mt-8">
           <Card className="art-card p-4">
             <p className="text-center text-muted-foreground text-sm">
-              💡 Swipe right to like, left to pass, or tap to learn more about the artisan's story
+              💡 Swipe up to like ❤️, down to pass ✗, or tap to discover the artisan's story
             </p>
           </Card>
         </div>
-      )}
+      </div>
     </div>
   );
 };
